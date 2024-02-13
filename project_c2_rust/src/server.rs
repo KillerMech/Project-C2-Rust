@@ -1,26 +1,48 @@
-use std::io;
-use std::net::{TcpListener, TcpStream};
+use std::{
+    fs,
+    io::{prelude::*, BufReader},
+    net::{TcpListener, TcpStream},
+};
 
 pub fn start_server() {
     println!("Starting server..."); // Print a message to the console
     println!("Creating listener..."); 
 
+    // Create the listener. Rust returns an error if the listener can't be created.
+    // This is the listener for the server and handles client connections
     let listener = create_listener().expect("Failed to create listener");
     println!("Listener created successfully");
     for stream in listener.incoming() {
         let stream = stream.expect("Failed to accept connection");
+
         handle_client(stream);
     }
 
 }
 
-fn handle_client(stream: TcpStream) {
+// This function handles the client connection
+// It's important to note that the stream is mutable
+fn handle_client(mut stream: TcpStream) {
     // TODO: Implement this function
-    println!("First test complete, closing connection");
-    stream.shutdown(std::net::Shutdown::Both).expect("Failed to close connection");
+    let buf_reader = BufReader::new(&mut stream);
+    let http_request: Vec<_> = buf_reader
+        .lines()
+        .map(|result| result.unwrap())
+        .take_while(|line| !line.is_empty())
+        .collect();
+
+    let status_line = "HTTP/1.1 200 OK";
+    let contents = fs::read_to_string("hello.html").unwrap();
+    let length = contents.len();
+
+    let response = 
+        format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
+
+    stream.write_all(response.as_bytes()).unwrap();
+    stream.shutdown(std::net::Shutdown::Both).unwrap();
 }
 
-fn create_listener() -> io::Result<TcpListener> {
+fn create_listener() -> std::io::Result<TcpListener> {
     let mut listen_port = "9001";
     let listen_ip = "0.0.0.0";
     let mut input = String::new();
