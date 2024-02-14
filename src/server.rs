@@ -49,6 +49,8 @@ fn handle_client(mut stream: TcpStream) {
     stream.shutdown(std::net::Shutdown::Both).unwrap();
 }
 
+// TODO: Change function to accept listen_port and listen_ip as arguments
+// This will allow the function to be used for opening other listeners
 fn create_listener() -> std::io::Result<TcpListener> {
     let mut listen_port = "9001";
     let listen_ip = "0.0.0.0";

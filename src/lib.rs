@@ -9,7 +9,7 @@ use std::{
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: mpsc::Sender<Job>,
+    sender: Option<mpsc::Sender<Job>>,
 }
 
 type Job = Box<dyn FnOnce() + Send + 'static>;
@@ -30,7 +30,7 @@ impl ThreadPool {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
 
-        ThreadPool { workers, sender }
+        ThreadPool { workers, sender: Some(sender) }
     }
 
     // The execute method takes a closure and sends it to the workers.
@@ -40,13 +40,31 @@ impl ThreadPool {
         F: FnOnce() + Send + 'static
     {
         let job = Box::new(f);
-        self.sender.send(job).unwrap();
+        self.sender.as_ref().unwrap().send(job).unwrap();
+    }
+}
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        // Drop the sender first to signal to the workers that they should shut down.
+        drop(self.sender.take());
+
+        // Join each worker's thread to make sure they finish their work.
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+
+            // If the worker has a thread, take it and join it.
+            if let Some(thread) = worker.thread.take() {
+                // The join method blocks the current thread until the worker's thread has finished.
+                thread.join().unwrap();
+            }
+        }
     }
 }
 
 struct Worker {
     id: usize,
-    thread: thread::JoinHandle<()>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
@@ -57,13 +75,25 @@ impl Worker {
             // lock is called on receiver to acquire the mutex.
             // recv is called after lock to get a job from the receiver.
             // recv blocks until a job becomes available.
-            let job = receiver.lock().unwrap().recv().unwrap();
+            let message = receiver.lock().unwrap().recv();
 
-            println!("Worker {} got a job; executing.", id);
+            match message {
+                Ok(job) => {
+                    println!("Worker {} got a job; executing.", id);
 
-            job();
+                    job();
+                },
+                Err(_) => {
+                    println!("Worker {} was told to terminate.", id);
+
+                    break;
+                }
+            }
         });
 
-        Worker { id, thread }
+        Worker { 
+            id, 
+            thread: Some(thread), 
+        }
     }
 }
