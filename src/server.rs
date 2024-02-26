@@ -3,6 +3,7 @@ use std::{
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
 };
+use url::{Url, ParseError};
 use project_c2_rust::ThreadPool;
 
 // Start server function
@@ -33,12 +34,16 @@ fn handle_client(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&mut stream);
     let request_line = buf_reader.lines().next().unwrap().unwrap();
 
-    let (status_line, filename) = if request_line.starts_with("GET / HTTP/1.1") {
-        ("HTTP/1.1 200 OK", "hello.html")
+    let requested_url = parse_requested_url(&request_line).unwrap();
+    println!("Requested URL: {}", requested_url);
+
+    let (status_line, filename) = if request_line.starts_with("GET") {
+        ("HTTP/1.1 200 OK", requested_url)
     } else {
-        ("HTTP/1.1 404 NOT FOUND", "404.html")
+        ("HTTP/1.1 404 NOT FOUND", "404.html".to_string())
     };
 
+    println!("filename: {}", filename);
     let contents = fs::read_to_string(filename).unwrap();
     let length = contents.len();
 
@@ -69,5 +74,33 @@ fn create_listener() -> std::io::Result<TcpListener> {
     // save the listener. The ? operator will return an error if the listener can't be created
     let listener = TcpListener::bind(format!("{}:{}", listen_ip, listen_port))?;
     Ok(listener)
+}
+
+fn parse_requested_url(request_dir: &String) -> Result<String, ParseError> {
+    let mut base_url = String::new();
+    let mut url_position = (0, 0);
+    let mut first_char = '_';
+
+    for (i, char) in request_dir.chars().enumerate() {
+        if char == '/' && first_char != '/'{
+            url_position.0 = i;
+            first_char = char;
+        } else if first_char == '/' && char == ' ' {
+            url_position.1 = i;
+            break;
+        }
+    }
+
+    base_url = request_dir[url_position.0..url_position.1].to_string();
+
+    if base_url == "/" {
+        base_url = "index.html".to_string();
+    } else {
+        base_url = ".".to_string() + &base_url;
+    }
+
+    println!("base_url: {}", base_url);
+
+    Ok(base_url)
 }
 
