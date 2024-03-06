@@ -1,13 +1,13 @@
 <template>
-    <div id="header">
+    <div class="header">
         <Card style="text-align: center; height: 5rem; overflow:hidden">
             <template #header>
                 <h1>Rust C2</h1>
             </template>
         </Card>
     </div>
-    <div id="panel-menu"> 
-        <Card style="align: center; float: right; width: 80%;">
+    <div class="panel-menu"> 
+        <Card style="align: center; float: right; width: 80%; height: 100%">
             <template #content>
                 <p>Content</p>
             </template>
@@ -74,11 +74,27 @@ const items = ref([
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #2c3e50;
-  margin-top: 60px;
+}
+
+.header {
+    background-color: #cb997e;
+    color: #fff;
+    padding: 1rem;
+    width: 100%;
 }
 
 .main-menu {
-  width: 20em;
+    background-color: #333;
+    color: #fff;
+    padding: 1rem;
+    width: 20%;
 }
+
+.content {
+    background-color: #fff;
+    color: #333;
+    padding: 1rem;
+    width: 80%;
+}
+
 </style>
