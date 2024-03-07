@@ -79,13 +79,10 @@ impl Worker {
 
             match message {
                 Ok(job) => {
-                    println!("Worker {} got a job; executing.", id);
-
                     job();
                 },
                 Err(_) => {
                     println!("Worker {} was told to terminate.", id);
-
                     break;
                 }
             }

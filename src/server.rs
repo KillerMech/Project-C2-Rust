@@ -30,30 +30,34 @@ pub fn start_server() {
 // This function handles the client connection
 // It's important to note that the stream is mutable
 fn handle_client(mut stream: TcpStream) {
-    // TODO: Implement this function
     let buf_reader = BufReader::new(&mut stream);
     let request_line = buf_reader.lines().next().unwrap().unwrap();
 
     let requested_url = parse_requested_url(&request_line).unwrap();
-    println!("Requested URL: {}", requested_url);
 
-    let (status_line, filename) = if request_line.starts_with("GET") {
-        ("HTTP/1.1 200 OK", requested_url)
+    let (status_line, filename, content_type) = if request_line.starts_with("GET") {
+        let content_type = get_content_type(&requested_url);
+        ("HTTP/1.1 200 OK", requested_url, content_type)
     } else {
-        ("HTTP/1.1 404 NOT FOUND", "404.html".to_string())
+        ("HTTP/1.1 404 NOT FOUND", "404.html".to_string(), "text/html".to_string())
     };
 
-    println!("filename: {}", filename);
-    let contents = fs::read_to_string(filename).unwrap();
-    let length = contents.len();
+    if let Ok(contents) = fs::read(&filename) {
+        let length = contents.len();
+        let response = format!("{status_line}\r\nContent-Type: {content_type}\r\nContent-Length: {length}\r\n\r\n");
+        stream.write(response.as_bytes()).unwrap();
+        stream.write(&contents).unwrap();
+    } else {
+        println!("File not found: {}", filename);
+        let contents = fs::read("./404.html").unwrap();
+        let length = contents.len();
+        let response = format!("{status_line}\r\nContent-Type: {content_type}\r\nContent-Length: {length}\r\n\r\n");
+        stream.write(response.as_bytes()).unwrap();
+        stream.write(&contents).unwrap();
+    }
 
-    let response = 
-        format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
-
-    stream.write(response.as_bytes()).unwrap();
     stream.shutdown(std::net::Shutdown::Both).unwrap();
 }
-
 // TODO: Change function to accept listen_port and listen_ip as arguments
 // This will allow the function to be used for opening other listeners
 fn create_listener() -> std::io::Result<TcpListener> {
@@ -99,8 +103,25 @@ fn parse_requested_url(request_dir: &String) -> Result<String, ParseError> {
         base_url = ".".to_string() + &base_url;
     }
 
-    println!("base_url: {}", base_url);
-
     Ok(base_url)
 }
 
+fn get_content_type(filename: &str) -> String {
+    if filename.ends_with(".html") {
+        "text/html".to_string()
+    } else if filename.ends_with(".css") {
+        "text/css".to_string()
+    } else if filename.ends_with(".js") {
+        "application/javascript".to_string()
+    } else if filename.ends_with(".ttf") {
+        "font/ttf".to_string()
+    } else if filename.ends_with(".woff2") {
+        "font/woff2".to_string()
+    } else if filename.ends_with(".woff") {
+        "font/woff".to_string()
+    } else if filename.ends_with(".eot") {
+        "application/vnd.ms-fontobject".to_string()
+    } else {
+        "application/octet-stream".to_string()
+    }
+}
