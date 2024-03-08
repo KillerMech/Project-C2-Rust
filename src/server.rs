@@ -10,6 +10,7 @@ use url::ParseError;
 use project_c2_rust::ThreadPool;
 mod request_handler;
 
+
 // Start server function
 pub fn start_server() {
     println!("Starting server..."); // Print a message to the console
@@ -19,6 +20,7 @@ pub fn start_server() {
     // This is the listener for the server and handles client connections
     let listener = create_listener().expect("Failed to create listener");
     let pool = ThreadPool::new(4);
+    let active_listeners: Arc<Mutex<HashMap<String, TcpListener>>> = Arc::new(Mutex::new(HashMap::new()));
 
     println!("Webserver started, use browser to connect to http://localhost:{}/", listener.local_addr().unwrap().port());
     for stream in listener.incoming() {
@@ -50,6 +52,10 @@ fn handle_client(mut stream: TcpStream) {
         (status_line, filename) = ("HTTP/1.1 200 OK".to_string(), requested_url);
     // If the request is not a GET request, return a 404 error
     }
+
+    if request_line.starts_with("POST /listener") {
+    }
+        
 
     // Read the file at the directory location
     if let Ok(contents) = fs::read(&filename) {
@@ -93,10 +99,10 @@ fn create_listener() -> std::io::Result<TcpListener> {
     Ok(listener)
 }
 
-//fn create_agent_listener() -> std::io::Result<TcpListener> {
-//    let mut listen_port = "9002";
-//    let listen_ip = "0.0.0.0";
-//}
+fn create_agent_listener(&agent_pool: Arc<Mutex<HashMap<String, TcpListener>>>) -> std::io::Result<TcpListener> {
+    let mut listen_port = "9002";
+    let listen_ip = "0.0.0.0";
+}
 
 fn parse_requested_url(request_dir: &String) -> Result<String, ParseError> {
     let mut base_url = String::new();
