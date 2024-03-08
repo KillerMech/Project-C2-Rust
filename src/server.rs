@@ -2,9 +2,13 @@ use std::{
     fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
+    collections::HashMap,
+    sync::{Arc, Mutex},
 };
-use url::{Url, ParseError};
+use urlencoded::UrlEncodedBody;
+use url::ParseError;
 use project_c2_rust::ThreadPool;
+mod request_handler;
 
 // Start server function
 pub fn start_server() {
@@ -30,22 +34,31 @@ pub fn start_server() {
 // This function handles the client connection
 // It's important to note that the stream is mutable
 fn handle_client(mut stream: TcpStream) {
+    // Create a buffer reader to read the stream
     let buf_reader = BufReader::new(&mut stream);
     let request_line = buf_reader.lines().next().unwrap().unwrap();
+    let (mut status_line, mut filename, mut content_type) = (String::new(), String::new(), String::new());
 
+    // Parse the requested URL
     let requested_url = parse_requested_url(&request_line).unwrap();
+    println!("Request: {}", requested_url);
 
-    let (status_line, filename, content_type) = if request_line.starts_with("GET") {
+    // Check if the request is a GET request
+    if request_line.starts_with("GET") {
+        // Get the content type of the requested file
         let content_type = get_content_type(&requested_url);
-        ("HTTP/1.1 200 OK", requested_url, content_type)
-    } else {
-        ("HTTP/1.1 404 NOT FOUND", "404.html".to_string(), "text/html".to_string())
-    };
+        (status_line, filename) = ("HTTP/1.1 200 OK".to_string(), requested_url);
+    // If the request is not a GET request, return a 404 error
+    }
 
+    // Read the file at the directory location
     if let Ok(contents) = fs::read(&filename) {
         let length = contents.len();
+        // Create the response
         let response = format!("{status_line}\r\nContent-Type: {content_type}\r\nContent-Length: {length}\r\n\r\n");
+        // Write the response to the stream
         stream.write(response.as_bytes()).unwrap();
+        // Write the file contents to the stream
         stream.write(&contents).unwrap();
     } else {
         println!("File not found: {}", filename);
@@ -79,6 +92,11 @@ fn create_listener() -> std::io::Result<TcpListener> {
     let listener = TcpListener::bind(format!("{}:{}", listen_ip, listen_port))?;
     Ok(listener)
 }
+
+//fn create_agent_listener() -> std::io::Result<TcpListener> {
+//    let mut listen_port = "9002";
+//    let listen_ip = "0.0.0.0";
+//}
 
 fn parse_requested_url(request_dir: &String) -> Result<String, ParseError> {
     let mut base_url = String::new();

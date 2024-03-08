@@ -6,18 +6,26 @@
             </template>
         </Card>
     </div>
-    <div class="panel-menu"> 
+
+    <div class="panel-menu">
         <Card style="align: center; float: right; width: 80%; height: 100%">
             <template #content>
-                <p>Content</p>
+                <p v-if="!currentComponent">Welcome to Rust C2 <br>
+                    Please choose an option from the menu
+                </p>
+                <component :is="currentComponent" />
             </template>
         </Card>
-        <PanelMenu id="main-menu" :model="items" style="float: left; width: 20%" />
+        <PanelMenu id="main-menu" :model="items" v-model="selectedItem" style="float: left; width: 20%" />
     </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import NewListenerForm from './components/NewListenerForm.vue';
+
+const currentComponent = ref(null);
+const selectedItem = ref(null);
 
 const items = ref([
     {
@@ -26,7 +34,11 @@ const items = ref([
         items: [
             {
                 label: 'New',
-                icon: 'pi pi-fw pi-plus'
+                icon: 'pi pi-fw pi-plus',
+                command: () => {
+                    currentComponent.value = NewListenerForm;
+                    selectedItem.value = 'New';
+                }
             },
             {
                 label: 'Delete',
@@ -90,7 +102,7 @@ const items = ref([
     width: 20%;
 }
 
-.content {
+#content {
     background-color: #fff;
     color: #333;
     padding: 1rem;

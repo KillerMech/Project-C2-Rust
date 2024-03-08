@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 url = "2.5.0"
+urlencoded = "0.6.0"
