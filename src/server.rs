@@ -19,15 +19,16 @@ pub fn start_server() {
     // Create the listener. Rust returns an error if the listener can't be created.
     // This is the listener for the server and handles client connections
     let listener = create_listener().expect("Failed to create listener");
+    let mut active_listeners: HashMap<u16, TcpListener> = HashMap::new(); 
     let pool = ThreadPool::new(4);
-    let active_listeners: Arc<Mutex<HashMap<String, TcpListener>>> = Arc::new(Mutex::new(HashMap::new()));
 
     println!("Webserver started, use browser to connect to http://localhost:{}/", listener.local_addr().unwrap().port());
     for stream in listener.incoming() {
         let stream = stream.expect("Failed to accept connection");
 
+        // Create a thread for each client connection
         pool.execute(|| {
-            handle_client(stream);
+            handle_client(stream, active_listeners);
         });
     }
 
@@ -35,7 +36,7 @@ pub fn start_server() {
 
 // This function handles the client connection
 // It's important to note that the stream is mutable
-fn handle_client(mut stream: TcpStream) {
+fn handle_client(mut stream: TcpStream, mut agent_pool: HashMap<u16, TcpListener>) {
     // Create a buffer reader to read the stream
     let buf_reader = BufReader::new(&mut stream);
     let request_line = buf_reader.lines().next().unwrap().unwrap();
@@ -79,7 +80,7 @@ fn handle_client(mut stream: TcpStream) {
 }
 // TODO: Change function to accept listen_port and listen_ip as arguments
 // This will allow the function to be used for opening other listeners
-fn create_listener() -> std::io::Result<TcpListener> {
+pub fn create_listener() -> std::io::Result<TcpListener>{
     let mut listen_port = "9001";
     let listen_ip = "0.0.0.0";
     let mut input = String::new();
@@ -99,9 +100,11 @@ fn create_listener() -> std::io::Result<TcpListener> {
     Ok(listener)
 }
 
-fn create_agent_listener(&agent_pool: Arc<Mutex<HashMap<String, TcpListener>>>) -> std::io::Result<TcpListener> {
+fn create_agent_listener(&agent_pool: HashMap<u16, TcpListener>) -> std::io::Result<TcpStream> {
+    let active_listeners: Arc<Mutex<HashMap<String, TcpListener>>> = Arc::new(Mutex::new(HashMap::new()));
     let mut listen_port = "9002";
     let listen_ip = "0.0.0.0";
+    let pool = ThreadPool::new(5);
 }
 
 fn parse_requested_url(request_dir: &String) -> Result<String, ParseError> {
