@@ -30,8 +30,8 @@
     const submit = async () => {
        try {
            // Todo: Get rid of console log
-           console.log("http://localhost:"+window.location.port+'/listeners');
-           const response = await axios.post('http://localhost:'+window.location.port+'/listeners', {
+           console.log("http://localhost:"+window.location.port+'/new_listener');
+           const response = await axios.post('http://localhost:'+window.location.port+'/new_listener', {
                type: type.value,
                port: port.value
            });

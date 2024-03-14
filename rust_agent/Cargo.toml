@@ -1,13 +1,8 @@
-workspace = { members = ["rest_agent", "rust_agent"] }
 [package]
-name = "project_c2_rust"
+name = "rust_agent"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = "1.0.197"
-serde_derive = "1.0.197"
-str = "0.1.4"
-url = "2.5.0"
