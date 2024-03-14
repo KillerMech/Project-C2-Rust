@@ -1,4 +1,4 @@
-workspace = { members = ["rest_agent", "rust_agent"] }
+workspace = { members = ["rust_agent"] }
 [package]
 name = "project_c2_rust"
 version = "0.1.0"

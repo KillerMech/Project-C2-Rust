@@ -68,6 +68,7 @@ fn handle_client(mut stream: TcpStream) {
 
     if request_line.starts_with("GET /agent_heartbeat") {
         println!("Agent heartbeat received");
+        (status_line, filename) = ("HTTP/1.1 200 OK".to_string(), requested_url);
     } else if request_line.starts_with("GET") {
         // Get the content type of the requested file
         content_type = get_content_type(&requested_url);
@@ -159,30 +160,36 @@ pub fn create_listener(ip_address: String, port: String) -> std::io::Result<TcpL
     let listen_port = port.trim();
     let listen_ip = ip_address;
 
-    println!("Port will be: {}", listen_port);
-    
     //listen_port = listen_port.trim();
     // save the listener. The ? operator will return an error if the listener can't be created
     let listener = TcpListener::bind(format!("{}:{}", listen_ip, listen_port))?;
     Ok(listener)
 }
 
+// TODO: Listener types need to be added in the future. Currently only support
+// unencrypted TCP/http listeners.
 fn create_agent_listener(port: String, listener_type: String) {
     let listen_ip = "0.0.0.0";
     let listen_port = port;
     let pool = ThreadPool::new(5);
     //let agent_pool = AgentPool::new(Mutex::new(HashMap::new()));
 
-    let new_listener = create_listener(listen_ip.to_string(), listen_port.to_string()).expect("Failed to create listener");
+    //let new_listener = create_listener(listen_ip.to_string(), listen_port.to_string()).expect("Failed to create listener");
+    if let Ok(new_listener) = create_listener(listen_ip.to_string(), listen_port.to_string()) {
+        println!("Agent listener started on port: {}", listen_port);
 
-    for stream in new_listener.incoming() {
-        let stream = stream.expect("Failed to accept connection");
+        for stream in new_listener.incoming() {
+            let stream = stream.expect("Failed to accept connection");
 
-        // Create a thread for each client connection
-        pool.execute(|| {
-            handle_client(stream);
-        });
+            // Create a thread for each client connection
+            pool.execute(|| {
+                handle_client(stream);
+            });
+        }
+    } else {
+        println!("Failed to create listener on port: {}", listen_port);
     }
+
 
 }
 
