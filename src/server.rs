@@ -7,7 +7,7 @@ use std::{
 };
 use url::ParseError;
 use project_c2_rust::ThreadPool;
-mod request_handler;
+mod file_handler;
 
 struct AgentListener {
     listen_type: String,
@@ -172,11 +172,15 @@ fn create_agent_listener(port: String, listener_type: String) {
     let listen_ip = "0.0.0.0";
     let listen_port = port;
     let pool = ThreadPool::new(5);
-    //let agent_pool = AgentPool::new(Mutex::new(HashMap::new()));
 
-    //let new_listener = create_listener(listen_ip.to_string(), listen_port.to_string()).expect("Failed to create listener");
     if let Ok(new_listener) = create_listener(listen_ip.to_string(), listen_port.to_string()) {
         println!("Agent listener started on port: {}", listen_port);
+
+        let result = match file_handler::manage_listener_file(&"new_listener".to_string(), &listen_port.to_string()) {
+            Ok(result) => result,
+            Err(e) => e,
+        };
+        println!("{}", result);
 
         for stream in new_listener.incoming() {
             let stream = stream.expect("Failed to accept connection");
@@ -185,12 +189,12 @@ fn create_agent_listener(port: String, listener_type: String) {
             pool.execute(|| {
                 handle_client(stream);
             });
-        }
+
+        } 
     } else {
         println!("Failed to create listener on port: {}", listen_port);
+
     }
-
-
 }
 
 fn parse_requested_url(request_dir: &String) -> Result<String, ParseError> {
