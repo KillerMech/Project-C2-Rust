@@ -132,6 +132,61 @@ fn handle_client(mut stream: TcpStream) {
         }
     }
 
+    if request_line.starts_with("POST /create_agent") {
+        let mut headers_end = false;
+        let mut content_length: i32 = 0;
+
+        while !headers_end {
+            let mut line_buffer = Vec::new();
+            buf_reader.read_until(b'\n', &mut line_buffer).unwrap();
+            let line = String::from_utf8(line_buffer.clone()).unwrap();
+
+            if line == "\r\n" {
+                headers_end = true;
+            } else {
+                if line.starts_with("Content-Length") {
+                    let mut length_str = line.trim_start_matches("Content-Length: ");
+                    length_str = length_str.trim();
+                    content_length = length_str.parse().unwrap();
+                }
+            }
+        }
+
+        let mut post_body = String::new();
+        let bytes_read_total = 0;
+
+        if content_length != 0 {
+            while bytes_read_total < content_length {
+                loop {
+                    let mut buffer = [0; 1024];
+                    let bytes_read = buf_reader.read(&mut buffer).unwrap();
+
+                    if bytes_read_total >= content_length {
+                        break;
+                    }
+                  post_body.push_str(&String::from_utf8_lossy(&buffer[..bytes_read]));
+                  break;
+                }
+                break;
+            }
+        }
+
+        if post_body != "" {
+            // Carve out the name field for the type of listener.
+            let mut ip_position = post_body.find("ip_addy\":\"").unwrap();
+            let mut ip_field = &post_body[ip_position+7..];
+            ip_position = ip_field.find("\"").unwrap();
+            ip_field = &ip_field[..ip_position];
+
+            // Carve out the port field for the listener.
+            let mut port_position = post_body.find("port\":\"").unwrap();
+            let mut port_field = &post_body[port_position+7..];
+            port_position = port_field.find("\"").unwrap();
+            port_field = &port_field[..port_position];
+            
+            create_agent(ip_field.to_string(), port_field.to_string());
+        }
+    }
         
 
     // Read the file at the directory location
@@ -160,7 +215,6 @@ pub fn create_listener(ip_address: String, port: String) -> std::io::Result<TcpL
     let listen_port = port.trim();
     let listen_ip = ip_address;
 
-    //listen_port = listen_port.trim();
     // save the listener. The ? operator will return an error if the listener can't be created
     let listener = TcpListener::bind(format!("{}:{}", listen_ip, listen_port))?;
     Ok(listener)
@@ -180,7 +234,7 @@ fn create_agent_listener(port: String, listener_type: String) {
             Ok(result) => result,
             Err(e) => e,
         };
-        println!("{}", result);
+        //println!("{}", result);
 
         for stream in new_listener.incoming() {
             let stream = stream.expect("Failed to accept connection");
@@ -195,6 +249,11 @@ fn create_agent_listener(port: String, listener_type: String) {
         println!("Failed to create listener on port: {}", listen_port);
 
     }
+}
+
+fn create_agent(ip_address: String, port: String) {
+    let listen_ip = ip_address;
+    let listen_port = port;
 }
 
 fn parse_requested_url(request_dir: &String) -> Result<String, ParseError> {

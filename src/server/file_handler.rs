@@ -5,7 +5,8 @@ pub fn manage_listener_file(request: &String, identifier: &String) -> Result<Str
     if request == "new_listener" {
         let mut file = File::options()
             .append(true)
-            .open("./listener.txt").unwrap();
+            .create(true)
+            .open("listener.txt").unwrap();
 
         if (file.metadata().unwrap().len() as i64) == 0 {
             file.write(format!("{}", identifier).as_bytes()).unwrap();
@@ -19,8 +20,7 @@ pub fn manage_listener_file(request: &String, identifier: &String) -> Result<Str
     } else if request == "delete_listener" {
         let mut file = File::options()
             .write(true)
-            .open("./listener.txt").expect("cannot open file");
-
+            .open("listener.txt").expect("cannot open file");
 
 
         file.write_all(identifier.as_bytes()).unwrap();

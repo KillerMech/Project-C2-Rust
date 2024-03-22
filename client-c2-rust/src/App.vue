@@ -23,6 +23,7 @@
 <script setup>
 import { ref } from 'vue';
 import NewListenerForm from './components/NewListenerForm.vue';
+import CreateAgentForm from './components/CreateAgentForm.vue';
 
 const currentComponent = ref(null);
 const selectedItem = ref(null);
@@ -55,8 +56,12 @@ const items = ref([
         icon: 'pi pi-fw pi-user',
         items: [
             {
-                label: 'Save',
-                icon: 'pi pi-fw pi-save'
+                label: 'Create',
+                icon: 'pi pi-fw pi-save',
+                command: () => {
+                    currentComponent.value = CreateAgentForm;
+                    selectedItem.value = 'Create';
+                }
             },
             {
                 label: 'Update',

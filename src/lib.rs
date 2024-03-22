@@ -12,6 +12,10 @@ pub struct ThreadPool {
     sender: Option<mpsc::Sender<Job>>,
 }
 
+// The Job type is a type alias for a trait object that holds the type of 
+// closure that execute will receive. FnOnce indicates that the closure can be
+// called once and Send indicates that the closure can be sent from one thread 
+// to another.
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
