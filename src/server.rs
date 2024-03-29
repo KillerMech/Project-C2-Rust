@@ -39,6 +39,7 @@ pub fn start_server() {
     let listener = create_listener("0.0.0.0".to_string(), port.to_string()).expect("Failed to create listener");
     let pool = ThreadPool::new(4);
 
+
     println!("Webserver started, use browser to connect to http://localhost:{}/", listener.local_addr().unwrap().port());
     for stream in listener.incoming() {
         let stream = stream.expect("Failed to accept connection");
@@ -48,6 +49,7 @@ pub fn start_server() {
             handle_client(stream);
         });
     }
+    
 }
 
 // This function handles the client connection
@@ -187,6 +189,58 @@ fn handle_client(mut stream: TcpStream) {
             create_agent(ip_field.to_string(), port_field.to_string());
         }
     }
+
+    if request_line.starts_with("POST /restore_listener"){
+        let mut headers_end = false;
+        let mut content_length: i32 = 0;
+
+        while !headers_end {
+            let mut line_buffer = Vec::new();
+            buf_reader.read_until(b'\n', &mut line_buffer).unwrap();
+            let line = String::from_utf8(line_buffer.clone()).unwrap();
+
+            if line == "\r\n" {
+                headers_end = true;
+            } else {
+                if line.starts_with("Content-Length") {
+                    let mut length_str = line.trim_start_matches("Content-Length: ");
+                    length_str = length_str.trim();
+                    content_length = length_str.parse().unwrap();
+                }
+            }
+        }
+
+        let mut post_body = String::new();
+        let bytes_read_total = 0;
+
+        if content_length != 0 {
+            while bytes_read_total < content_length {
+                loop {
+                    let mut buffer = [0; 1024];
+                    let bytes_read = buf_reader.read(&mut buffer).unwrap();
+
+                    if bytes_read_total >= content_length {
+                        break;
+                    }
+                  post_body.push_str(&String::from_utf8_lossy(&buffer[..bytes_read]));
+                  break;
+                }
+                break;
+            }
+        }
+
+        match setup() {
+            Ok(listeners) => {
+                for backedup_listener in listeners {
+                    create_agent_listener(backedup_listener, "http".to_string());
+                }
+            },
+            Err(e) => {
+                println!("{}", e);
+            }
+        }
+
+    }
         
 
     // Read the file at the directory location
@@ -207,6 +261,22 @@ fn handle_client(mut stream: TcpStream) {
     }
 
     stream.shutdown(std::net::Shutdown::Both).unwrap();
+}
+
+// Currently, this function will be used to check for the listener file
+// and recreate the listeners in the file.
+fn setup() -> Result<Vec<String>, String> {
+    let mut listeners: Vec<String> = Vec::new();
+    let listener_file = file_handler::manage_listener_file(&"get_listeners".to_string(), &"".to_string())?;
+
+    if listener_file == "" {
+        return Result::Err("No listeners found".to_string());
+    } else {
+        for listener in listener_file.split(",") {
+            listeners.push(listener.to_string());
+        }
+        return Result::Ok(listeners);
+    }
 }
 
 // TODO: Change function to accept listen_port and listen_ip as arguments

@@ -1,5 +1,7 @@
+use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 
 pub fn manage_listener_file(request: &String, identifier: &String) -> Result<String, String> {
     if request == "new_listener" {
@@ -25,6 +27,13 @@ pub fn manage_listener_file(request: &String, identifier: &String) -> Result<Str
 
         file.write_all(identifier.as_bytes()).unwrap();
         Result::Ok("Success".to_string())
+    } else if request == "get_listeners" {
+        if Path::new("listener.txt").exists() {
+            let file = fs::read_to_string("listener.txt").expect("No such file or directory");
+            Result::Ok(file)
+        } else {
+            Result::Err("No listeners found".to_string())
+        }        
     } else {
         Result::Err("This didn't work".to_string())
     }

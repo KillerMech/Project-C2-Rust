@@ -4,7 +4,8 @@ use std::io::Read;
 fn main() -> Result<(), Box<dyn std::error::Error>>{
     loop {
         sleep(std::time::Duration::from_secs(5));
-        let mut res = reqwest::blocking::get("http://localhost:9001/agent_heartbeat").unwrap();
+        // Replace localhost with the IP address of the server
+        let mut res = reqwest::blocking::get("http://10.0.0.17:7777/agent_heartbeat").unwrap();
         let mut body = String::new();
         res.read_to_string(&mut body)?;
 
@@ -13,6 +14,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         println!("Body:\n{}", body);
         
     }
-
-    Ok(())
 }

@@ -24,6 +24,7 @@
 import { ref } from 'vue';
 import NewListenerForm from './components/NewListenerForm.vue';
 import CreateAgentForm from './components/CreateAgentForm.vue';
+import RestoreListenerForm from './components/RestoreListenerForm.vue';
 
 const currentComponent = ref(null);
 const selectedItem = ref(null);
@@ -44,6 +45,14 @@ const items = ref([
             {
                 label: 'Delete',
                 icon: 'pi pi-fw pi-trash'
+            },
+            {
+                label: 'Restore',
+                icon: 'pi pi-fw pi-undo',
+                command: () => {
+                    currentComponent.value = RestoreListenerForm;
+                    selectedItem.value = 'Restore';
+                }
             },
             {
                 label: 'Refresh',
