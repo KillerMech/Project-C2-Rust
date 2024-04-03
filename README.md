@@ -37,6 +37,7 @@ project.
 <H2>Building the Agent</H2>
 The agent is found in the rust_agent directory. To build the agent, you will
 need to have cross installed. To install cross, run the following command:
+
 ```
 cargo install cross
 ```
