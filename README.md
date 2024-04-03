@@ -15,6 +15,7 @@ place and the server.rs file calls on lib.rs and file_handler.rs.
 <H2>How to Run</H2>
 To run the server, simply run the following command in the root directory of
 the project:
+
 ```
 cargo run
 ```
